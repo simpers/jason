@@ -31,6 +31,7 @@ defmodule Jason.Encode do
   def encode(value, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
+    Process.put(:json_datetime_encoder, Application.get_env(:jason, :datetime_encoder))
     try do
       {:ok, value(value, escape, encode_map)}
     catch
@@ -216,7 +217,12 @@ defmodule Jason.Encode do
   # TODO: benchmark the effect of inlining the to_iso8601 functions
   for module <- [Date, Time, NaiveDateTime, DateTime] do
     defp struct(value, _escape, _encode_map, unquote(module)) do
-      [?\", unquote(module).to_iso8601(value), ?\"]
+      case Process.get(:json_datetime_encoder) do
+        nil ->
+          [?\", unquote(module).to_iso8601(value), ?\"]
+        encoder ->
+          [?\", encoder.encode(value), ?\"]
+      end
     end
   end
 

@@ -197,7 +197,12 @@ end
 
 defimpl Jason.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
   def encode(value, _opts) do
-    [?\", @for.to_iso8601(value), ?\"]
+    case Application.get_env(:jason, :datetime_encoder) do
+      nil ->
+        [?\", @for.to_iso8601(value), ?\"]
+      encoder ->
+        [?\", encoder.encode(value), ?\"]
+    end
   end
 end
 
